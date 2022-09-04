@@ -4,8 +4,8 @@
 ## Installation
 1. Add passwords for your kdbx databases to keyring:
 ```bash
-keepass-unlocker add ~/database1.kdbx
-keepass-unlocker add ~/database2.kdbx
+keepassxc-unlocker add ~/database1.kdbx
+keepassxc-unlocker add ~/database2.kdbx
 ```
 2. Add keepassxc-unlocker to autostart
 ```bash
