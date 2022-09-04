@@ -1,4 +1,16 @@
 #!/bin/bash
+#
+# based on this manual:
+# https://grabski.me/tech,/linux/2020/09/02/automatically-unlock-keepassxc-on-startup-and-after-lock-screen/
+
+verify_cmd_exists() {
+  command -v "$@" >/dev/null 2>&1 || (echo "$@ not installed" && exit 1)
+}
+
+verify_cmd_exists keepassxc || exit 1
+verify_cmd_exists secret-tool || exit 1
+verify_cmd_exists dbus-send || exit 1
+verify_cmd_exists dbus-monitor || exit 1
 
 add() {
     local keepass_db_path="$1"
@@ -109,12 +121,17 @@ case "$1" in
         watch ${@:2}
         ;;
     *)
-        echo "Usage examples:"
+        echo "Add KDBX unlock password to keyring:"
         echo "   keepassxc-unlocker add <kdbx file path>"
+        echo "Add unlocker to autostart:"
         echo "   keepassxc-unlocker autostart add"
+        echo "Remove unlocker from autostart:"
         echo "   keepassxc-unlocker autostart remove"
+        echo "Start KeePassXC and unlock all kdbx databases keyring has passwords for:"
         echo "   keepassxc-unlocker startup"
+        echo "Unlock all kdbx databases keyring has passwords for:"
         echo "   keepassxc-unlocker unlock"
+        echo "Run session unlock watcher:"
         echo "   keepassxc-unlocker watch"
         ;;
 esac
