@@ -1,6 +1,6 @@
 Auto-unlocker for [KeePassXC](https://github.com/keepassxreboot/keepassxc).
 
-Takes passwords from system keyring using `libsecret` and unlocks kdbx databases by listening and sending DBus messages.
+Takes passwords from system keyring using `libsecret` and unlocks kdbx databases by listening and sending D-Bus messages.
 
 ## Requirements
 Check requirements [here](keepassxc-unlocker#L10).
