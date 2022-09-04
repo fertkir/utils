@@ -1,0 +1,54 @@
+#!/bin/bash -e
+# Based on instruction from here: https://www.linuxuprising.com/2021/02/how-to-limit-battery-charging-set.html
+# TODO support multiple batteries
+# TODO parameters autocompletion
+
+if [ "$#" -eq 0 ]; then
+  echo "Usage: battery-charge status"
+  echo "       battery-charge 60"
+  echo "       battery-charge 80"
+  echo "       battery-charge 100"
+  exit 1
+fi
+
+if ! ls /sys/class/power_supply/BAT*/charge_control_end_threshold 1> /dev/null 2>&1; then
+  echo "No battery found"
+  exit 0
+fi
+
+if [ "$1" == "status" ]; then
+  echo -n "$(cat /sys/class/power_supply/BAT*/status), "
+  echo -n "now: $(cat /sys/class/power_supply/BAT*/capacity) %, "
+  echo    "max: $(cat /sys/class/power_supply/BAT*/charge_control_end_threshold) %"
+  exit 0
+fi
+
+if [ $(/usr/bin/id -u) -ne 0 ]; then
+    echo "Must be run as root"
+    exit 1
+fi
+
+THRESHOLD=$1
+
+echo \
+"[Unit]
+Description=Set the battery charge threshold
+After=multi-user.target
+StartLimitBurst=0
+
+[Service]
+Type=oneshot
+Restart=on-failure
+ExecStart=/bin/bash -c 'echo $THRESHOLD > /sys/class/power_supply/BAT*/charge_control_end_threshold'
+
+[Install]
+WantedBy=multi-user.target" > /etc/systemd/system/battery-charge-threshold.service
+
+if [ "$(systemctl is-enabled battery-charge-threshold.service)" == "enabled" ]; then
+  systemctl daemon-reload
+  systemctl restart battery-charge-threshold.service
+else
+  systemctl enable --now battery-charge-threshold.service
+fi
+
+echo "Charge threshold is set to $(cat /sys/class/power_supply/BAT*/charge_control_end_threshold)"
