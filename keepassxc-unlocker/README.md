@@ -1,5 +1,5 @@
 ## Requirements
-[Required packages](keepassxc-unlocker/keepassxc-unlocker#L10)
+[Required packages](keepassxc-unlocker#L10)
 
 ## Installation
 1. Add passwords for your kdbx databases to keyring:
