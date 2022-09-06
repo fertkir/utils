@@ -15,7 +15,7 @@ if [ -z "$pin" ]; then
     echo "Token isn't set up. Setting up."
     secret-tool store --label='RSA SecurID PIN' service securid-otp
     pin=$(secret-tool lookup service securid-otp)
-    read -p "Enter token url: " -s token_url </dev/tty
+    read -p "Enter token url: " -s token_url
     printf "$pin\n$pin\n" | stoken import --token "$token_url" --force > /dev/null
     echo
 fi
