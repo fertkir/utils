@@ -1,0 +1,23 @@
+#!/usr/bin/env node
+# This hook prepends commit message with jira # extracted from branch name
+# Replace TTT with your jira prefix
+
+const {
+  readFileSync: read,
+  writeFileSync: write,
+} = require('fs');
+
+const {
+  execSync: exec,
+} = require('child_process');
+
+const file = process.argv[2];
+const branch = exec(`git symbolic-ref --short HEAD`).toString().trim();
+const jiraIssue = /(?:TTT)-[0-9]+/g.exec(branch);
+
+let message = read(file).toString();
+if(jiraIssue && !message.startsWith(jiraIssue)){
+  message = `${jiraIssue} ${message}`;
+}
+
+write(file, message);
