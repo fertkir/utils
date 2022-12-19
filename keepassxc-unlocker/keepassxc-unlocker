@@ -51,7 +51,7 @@ autostart-remove() {
 
 startup() {
     keepassxc &
-    sleep 3
+    sleep 3 # 3 seconds are enough for even flatpak to start
     keepassxc-unlocker unlock
 }
 
@@ -80,6 +80,7 @@ watch() {
         while read; do
             STATUS=`echo "$REPLY" | awk '/^\s{3}/ {print $2}'`
             if [[ "$STATUS" == "$1" ]]; then
+                sleep 5 # without this timeout getting segmentation fault (see https://github.com/keepassxreboot/keepassxc/issues/7660#issuecomment-1358237816)
                 keepassxc-unlocker unlock
             fi
         done
