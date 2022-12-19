@@ -51,7 +51,7 @@ autostart-remove() {
 
 startup() {
     keepassxc &
-    sleep 1
+    sleep 3
     keepassxc-unlocker unlock
 }
 
