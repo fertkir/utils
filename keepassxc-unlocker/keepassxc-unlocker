@@ -84,7 +84,7 @@ watch() {
 
                 # due to segmentation fault (https://github.com/keepassxreboot/keepassxc/issues/7660#issuecomment-1358237816)
                 # let's restart keepassxc and unlock if it failed
-                sleep 2
+                sleep 2.$((RANDOM % 10))
                 pidof keepassxc || startup # restart keepassxc & unlock it, if
             fi
         done
