@@ -78,7 +78,7 @@ watch() {
 
     unlock_on_status() {
         while read; do
-            STATUS=`echo "$REPLY" | awk '/^\s{3}/ {print $2}'`
+            STATUS=$(echo "$REPLY" | awk '/^\s{3}/ {print $2}')
             if [[ "$STATUS" == "$1" ]]; then
                 sleep 5 # without this timeout getting segmentation fault (see https://github.com/keepassxreboot/keepassxc/issues/7660#issuecomment-1358237816)
                 keepassxc-unlocker unlock
@@ -100,7 +100,7 @@ watch() {
 
 case "$1" in
     add)
-        add ${@:2}
+        add "${@:2}"
         ;;
     autostart)
         case "$2" in
@@ -113,13 +113,13 @@ case "$1" in
         esac
         ;;
     startup)
-        startup ${@:2}
+        startup "${@:2}"
         ;;
     unlock)
-        unlock ${@:2}
+        unlock "${@:2}"
         ;;
     watch)
-        watch ${@:2}
+        watch "${@:2}"
         ;;
     *)
         echo "Add KDBX unlock password to keyring:"
