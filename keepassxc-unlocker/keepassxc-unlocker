@@ -52,7 +52,7 @@ autostart-remove() {
 startup() {
     keepassxc &
     sleep 3 # 3 seconds are enough for even flatpak to start
-    keepassxc-unlocker unlock
+    unlock
 }
 
 unlock() {
@@ -80,12 +80,7 @@ watch() {
         while read; do
             STATUS=$(echo "$REPLY" | awk '/^\s{3}/ {print $2}')
             if [[ "$STATUS" == "$1" ]]; then
-                keepassxc-unlocker unlock
-
-                # due to segmentation fault (https://github.com/keepassxreboot/keepassxc/issues/7660#issuecomment-1358237816)
-                # let's restart keepassxc and unlock if it failed
-                sleep 2.$((RANDOM % 10))
-                pidof keepassxc || startup # restart keepassxc & unlock it, if
+                unlock
             fi
         done
     }
