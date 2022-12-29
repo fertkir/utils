@@ -13,14 +13,14 @@ verify_cmd_exists dbus-send || exit 1
 verify_cmd_exists dbus-monitor || exit 1
 
 add() {
-    local keepass_db_path="$1"
-    secret-tool store --label='KeePassXC Unlocker' service keepassxc-unlocker username "$keepass_db_path"
+  local keepass_db_path="$1"
+  secret-tool store --label='KeePassXC Unlocker' service keepassxc-unlocker username "$keepass_db_path"
 }
 
 autostart-add() {
-    mkdir -p "$HOME/.config/autostart"
-    echo \
-"[Desktop Entry]
+  mkdir -p "$HOME/.config/autostart"
+  echo \
+    "[Desktop Entry]
 Type=Application
 Exec=keepassxc-unlocker startup
 X-GNOME-Autostart-enabled=true
@@ -30,9 +30,9 @@ NoDisplay=false
 Name=keepassxc-unlocker-startup
 Name[en_GB]=keepassxc-unlocker-startup
 Comment[en_GB]=Launch KeePassXC and unlock databases
-Comment=Launch KeePassXC and unlock databases" > "$HOME/.config/autostart/keepassxc-unlocker-startup.desktop"
-    echo \
-"[Desktop Entry]
+Comment=Launch KeePassXC and unlock databases" >"$HOME/.config/autostart/keepassxc-unlocker-startup.desktop"
+  echo \
+    "[Desktop Entry]
 Type=Application
 Exec=keepassxc-unlocker watch
 X-GNOME-Autostart-enabled=true
@@ -41,97 +41,97 @@ NoDisplay=false
 Name=keepassxc-unlocker-watch
 Name[en_GB]=keepassxc-unlocker-watch
 Comment[en_GB]=Launch keepassxc-unlocker watch
-Comment=Launch keepassxc-unlocker watch" > "$HOME/.config/autostart/keepassxc-unlocker-watch.desktop"
+Comment=Launch keepassxc-unlocker watch" >"$HOME/.config/autostart/keepassxc-unlocker-watch.desktop"
+
 }
 
 autostart-remove() {
-    rm "$HOME/.config/autostart/keepassxc-unlocker-startup.desktop"
-    rm "$HOME/.config/autostart/keepassxc-unlocker-watch.desktop"
+  rm "$HOME/.config/autostart/keepassxc-unlocker-startup.desktop"
+  rm "$HOME/.config/autostart/keepassxc-unlocker-watch.desktop"
 }
 
 startup() {
-    keepassxc &
-    sleep 3 # 3 seconds are enough for even flatpak to start
-    unlock
+  keepassxc &
+  sleep 3 # 3 seconds are enough for even flatpak to start
+  unlock
 }
 
 unlock() {
-    readarray -t secret_to_db_path_arr < <(secret-tool search --all service keepassxc-unlocker 2>&1 \
-        | awk '/^secret|^attribute.username/ {print $3}')
+  readarray -t secret_to_db_path_arr < <(secret-tool search --all service keepassxc-unlocker 2>&1 |
+    awk '/^secret|^attribute.username/ {print $3}')
 
-    for (( i=0; i<${#secret_to_db_path_arr[@]}; i=$((i+2)) ))
-    do
-        password=${secret_to_db_path_arr[$i]}
-        database=${secret_to_db_path_arr[$i+1]}
+  for ((i = 0; i < ${#secret_to_db_path_arr[@]}; i = $((i + 2)))); do
+    password=${secret_to_db_path_arr[$i]}
+    database=${secret_to_db_path_arr[$i + 1]}
 
-        dbus-send --print-reply --dest=org.keepassxc.KeePassXC.MainWindow \
-            /keepassxc org.keepassxc.KeePassXC.MainWindow.openDatabase \
-            string:"$database" string:"$password"
-    done
+    dbus-send --print-reply --dest=org.keepassxc.KeePassXC.MainWindow \
+      /keepassxc org.keepassxc.KeePassXC.MainWindow.openDatabase \
+      string:"$database" string:"$password"
+  done
 }
 
 watch() {
-    # from here: 
-    # https://github.com/keepassxreboot/keepassxc/blob/develop/src/gui/osutils/nixutils/ScreenLockListenerDBus.cpp
-    
-    trap 'kill 0' EXIT # killing children in case of parent's death
+  # from here:
+  # https://github.com/keepassxreboot/keepassxc/blob/develop/src/gui/osutils/nixutils/ScreenLockListenerDBus.cpp
 
-    unlock_on_status() {
-        while read; do
-            STATUS=$(echo "$REPLY" | awk '/^\s{3}/ {print $2}')
-            if [[ "$STATUS" == "$1" ]]; then
-                unlock
-            fi
-        done
-    }
+  trap 'kill 0' EXIT # killing children in case of parent's death
 
-    dbus-monitor --session "type=signal,interface=org.gnome.ScreenSaver,member=ActiveChanged" \
-        | unlock_on_status false &
-    dbus-monitor --session "type=signal,interface=org.freedesktop.ScreenSaver,member=ActiveChanged" \
-        | unlock_on_status false &
-    dbus-monitor --session "type=signal,interface=org.xfce.ScreenSaver,member=ActiveChanged" \
-        | unlock_on_status false &
-    dbus-monitor --session "type=signal,interface=org.gnome.SessionManager.Presence,member=StatusChanged" \
-        | unlock_on_status 0 &
+  unlock_on_status() {
+    while read; do
+      STATUS=$(echo "$REPLY" | awk '/^\s{3}/ {print $2}')
+      if [[ "$STATUS" == "$1" ]]; then
+        unlock
+      fi
+    done
+  }
 
-    wait
+  dbus-monitor --session "type=signal,interface=org.gnome.ScreenSaver,member=ActiveChanged" |
+    unlock_on_status false &
+  dbus-monitor --session "type=signal,interface=org.freedesktop.ScreenSaver,member=ActiveChanged" |
+    unlock_on_status false &
+  dbus-monitor --session "type=signal,interface=org.xfce.ScreenSaver,member=ActiveChanged" |
+    unlock_on_status false &
+  dbus-monitor --session "type=signal,interface=org.gnome.SessionManager.Presence,member=StatusChanged" |
+    unlock_on_status 0 &
+
+  wait
 }
 
 case "$1" in
-    add)
-        add "${@:2}"
-        ;;
-    autostart)
-        case "$2" in
-            add)
-                autostart-add
-                ;;
-            remove)
-                autostart-remove
-                ;;
-        esac
-        ;;
-    startup)
-        startup "${@:2}"
-        ;;
-    unlock)
-        unlock "${@:2}"
-        ;;
-    watch)
-        watch "${@:2}"
-        ;;
-    *)
-        echo "Add KDBX unlock password to keyring:"
-        echo "   keepassxc-unlocker add <kdbx file path>"
-        echo "Add unlocker to autostart:"
-        echo "   keepassxc-unlocker autostart add"
-        echo "Remove unlocker from autostart:"
-        echo "   keepassxc-unlocker autostart remove"
-        echo "Start KeePassXC and unlock all kdbx databases keyring has passwords for:"
-        echo "   keepassxc-unlocker startup"
-        echo "Unlock all kdbx databases keyring has passwords for:"
-        echo "   keepassxc-unlocker unlock"
-        echo "Run session unlock watcher:"
-        echo "   keepassxc-unlocker watch"
-        ;;
+add)
+  add "${@:2}"
+  ;;
+autostart)
+  case "$2" in
+  add)
+    autostart-add
+    ;;
+  remove)
+    autostart-remove
+    ;;
+  esac
+  ;;
+startup)
+  startup "${@:2}"
+  ;;
+unlock)
+  unlock "${@:2}"
+  ;;
+watch)
+  watch "${@:2}"
+  ;;
+*)
+  echo "Add KDBX unlock password to keyring:"
+  echo "   keepassxc-unlocker add <kdbx file path>"
+  echo "Add unlocker to autostart:"
+  echo "   keepassxc-unlocker autostart add"
+  echo "Remove unlocker from autostart:"
+  echo "   keepassxc-unlocker autostart remove"
+  echo "Start KeePassXC and unlock all kdbx databases keyring has passwords for:"
+  echo "   keepassxc-unlocker startup"
+  echo "Unlock all kdbx databases keyring has passwords for:"
+  echo "   keepassxc-unlocker unlock"
+  echo "Run session unlock watcher:"
+  echo "   keepassxc-unlocker watch"
+  ;;
 esac
