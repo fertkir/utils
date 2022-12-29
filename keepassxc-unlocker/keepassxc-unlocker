@@ -64,7 +64,7 @@ WantedBy=graphical-session.target" >"$HOME/.config/systemd/user/keepassxc-unlock
 autostart-remove() {
   #  rm -f "$HOME/.config/autostart/keepassxc-unlocker-startup.desktop"
   rm -f "$HOME/.config/autostart/keepassxc-unlocker-watch.desktop"
-  systemctl --user disable keepassxc-unlocker-startup.service
+  systemctl --user disable keepassxc-unlocker-startup.service || true
   rm -f "$HOME/.config/systemd/user/keepassxc-unlocker-startup.service"
   systemctl --user daemon-reload
 }
