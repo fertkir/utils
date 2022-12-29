@@ -19,18 +19,18 @@ add() {
 
 autostart-add() {
   mkdir -p "$HOME/.config/autostart"
-  echo \
-    "[Desktop Entry]
-Type=Application
-Exec=keepassxc-unlocker startup
-X-GNOME-Autostart-enabled=true
-X-GNOME-Autostart-Delay=2 
-Hidden=false
-NoDisplay=false
-Name=keepassxc-unlocker-startup
-Name[en_GB]=keepassxc-unlocker-startup
-Comment[en_GB]=Launch KeePassXC and unlock databases
-Comment=Launch KeePassXC and unlock databases" >"$HOME/.config/autostart/keepassxc-unlocker-startup.desktop"
+  #  echo \
+  #    "[Desktop Entry]
+  #Type=Application
+  #Exec=keepassxc-unlocker startup
+  #X-GNOME-Autostart-enabled=true
+  #X-GNOME-Autostart-Delay=2
+  #Hidden=false
+  #NoDisplay=false
+  #Name=keepassxc-unlocker-startup
+  #Name[en_GB]=keepassxc-unlocker-startup
+  #Comment[en_GB]=Launch KeePassXC and unlock databases
+  #Comment=Launch KeePassXC and unlock databases" >"$HOME/.config/autostart/keepassxc-unlocker-startup.desktop"
   echo \
     "[Desktop Entry]
 Type=Application
@@ -43,11 +43,30 @@ Name[en_GB]=keepassxc-unlocker-watch
 Comment[en_GB]=Launch keepassxc-unlocker watch
 Comment=Launch keepassxc-unlocker watch" >"$HOME/.config/autostart/keepassxc-unlocker-watch.desktop"
 
+  mkdir -p "$HOME/.config/systemd/user"
+  echo \
+    "[Unit]
+Description=keepassxc-unlocker start up
+
+[Service]
+ExecStart=keepassxc
+ExecStartPost=sleep 1
+ExecStartPost=keepassxc-unlocker unlock
+Restart=on-failure
+
+[Install]
+WantedBy=graphical-session.target" >"$HOME/.config/systemd/user/keepassxc-unlocker-startup.service"
+
+  systemctl --user daemon-reload
+  systemctl --user enable --now keepassxc-unlocker-startup.service
 }
 
 autostart-remove() {
-  rm "$HOME/.config/autostart/keepassxc-unlocker-startup.desktop"
-  rm "$HOME/.config/autostart/keepassxc-unlocker-watch.desktop"
+  #  rm -f "$HOME/.config/autostart/keepassxc-unlocker-startup.desktop"
+  rm -f "$HOME/.config/autostart/keepassxc-unlocker-watch.desktop"
+  systemctl --user disable keepassxc-unlocker-startup.service
+  rm -f "$HOME/.config/systemd/user/keepassxc-unlocker-startup.service"
+  systemctl --user daemon-reload
 }
 
 startup() {
