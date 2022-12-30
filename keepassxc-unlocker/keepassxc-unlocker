@@ -18,31 +18,7 @@ add() {
 }
 
 autostart-add() {
-  mkdir -p "$HOME/.config/autostart"
-  #  echo \
-  #    "[Desktop Entry]
-  #Type=Application
-  #Exec=keepassxc-unlocker startup
-  #X-GNOME-Autostart-enabled=true
-  #X-GNOME-Autostart-Delay=2
-  #Hidden=false
-  #NoDisplay=false
-  #Name=keepassxc-unlocker-startup
-  #Name[en_GB]=keepassxc-unlocker-startup
-  #Comment[en_GB]=Launch KeePassXC and unlock databases
-  #Comment=Launch KeePassXC and unlock databases" >"$HOME/.config/autostart/keepassxc-unlocker-startup.desktop"
-  echo \
-    "[Desktop Entry]
-Type=Application
-Exec=keepassxc-unlocker watch
-X-GNOME-Autostart-enabled=true
-Hidden=false
-NoDisplay=false
-Name=keepassxc-unlocker-watch
-Name[en_GB]=keepassxc-unlocker-watch
-Comment[en_GB]=Launch keepassxc-unlocker watch
-Comment=Launch keepassxc-unlocker watch" >"$HOME/.config/autostart/keepassxc-unlocker-watch.desktop"
-
+  # using service instead of just autostart in order to restart KeePassXC on failure
   mkdir -p "$HOME/.config/systemd/user"
   echo \
     "[Unit]
@@ -58,21 +34,41 @@ Restart=on-failure
 WantedBy=graphical-session.target" >"$HOME/.config/systemd/user/keepassxc-unlocker-startup.service"
 
   systemctl --user daemon-reload
-  systemctl --user enable --now keepassxc-unlocker-startup.service
+  systemctl --user start keepassxc-unlocker-startup.service
+
+  mkdir -p "$HOME/.config/autostart"
+  # will start keepassxc-unlocker-startup.service from autostart
+  # if we just enable the service instead, KeePassXC icon is distorted (probable graphical-session.target is started before screen resolution is set)
+    echo \
+      "[Desktop Entry]
+  Type=Application
+  Exec=systemctl --user start keepassxc-unlocker-startup.service
+  X-GNOME-Autostart-enabled=true
+  X-GNOME-Autostart-Delay=2
+  Hidden=false
+  NoDisplay=false
+  Name=keepassxc-unlocker-startup
+  Name[en_GB]=keepassxc-unlocker-startup
+  Comment[en_GB]=Launch KeePassXC and unlock databases
+  Comment=Launch KeePassXC and unlock databases" >"$HOME/.config/autostart/keepassxc-unlocker-startup.desktop"
+  echo \
+    "[Desktop Entry]
+Type=Application
+Exec=keepassxc-unlocker watch
+X-GNOME-Autostart-enabled=true
+Hidden=false
+NoDisplay=false
+Name=keepassxc-unlocker-watch
+Name[en_GB]=keepassxc-unlocker-watch
+Comment[en_GB]=Launch keepassxc-unlocker watch
+Comment=Launch keepassxc-unlocker watch" >"$HOME/.config/autostart/keepassxc-unlocker-watch.desktop"
 }
 
 autostart-remove() {
-  #  rm -f "$HOME/.config/autostart/keepassxc-unlocker-startup.desktop"
+  rm -f "$HOME/.config/autostart/keepassxc-unlocker-startup.desktop"
   rm -f "$HOME/.config/autostart/keepassxc-unlocker-watch.desktop"
-  systemctl --user disable keepassxc-unlocker-startup.service || true
   rm -f "$HOME/.config/systemd/user/keepassxc-unlocker-startup.service"
   systemctl --user daemon-reload
-}
-
-startup() {
-  keepassxc &
-  sleep 3 # 3 seconds are enough for even flatpak to start
-  unlock
 }
 
 unlock() {
@@ -130,9 +126,6 @@ autostart)
     ;;
   esac
   ;;
-startup)
-  startup "${@:2}"
-  ;;
 unlock)
   unlock "${@:2}"
   ;;
@@ -146,8 +139,6 @@ watch)
   echo "   keepassxc-unlocker autostart add"
   echo "Remove unlocker from autostart:"
   echo "   keepassxc-unlocker autostart remove"
-  echo "Start KeePassXC and unlock all kdbx databases keyring has passwords for:"
-  echo "   keepassxc-unlocker startup"
   echo "Unlock all kdbx databases keyring has passwords for:"
   echo "   keepassxc-unlocker unlock"
   echo "Run session unlock watcher:"
