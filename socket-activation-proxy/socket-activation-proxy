@@ -90,9 +90,9 @@ readarray -t CONF_NAMES < <(jq -r '.[].name' "$CONFIG_PATH")
 readarray -t CONF_PORTS < <(jq -r '.[].port' "$CONFIG_PATH")
 readarray -t CONF_COMMANDS < <(jq -r '.[].command' "$CONFIG_PATH")
 
-systemctl --user list-unit-files $PREFIX-*.socket --no-legend | awk '{print $1}' | xargs systemctl --user disable --now
+systemctl --user list-unit-files $PREFIX-*.socket --no-legend | awk '{print $1}' | xargs -r systemctl --user disable --now
 systemctl --user list-unit-files $PREFIX-* --no-legend |
-  awk -v home="$HOME" '{print home "/.config/systemd/user/" $1}' | xargs rm
+  awk -v home="$HOME" '{print home "/.config/systemd/user/" $1}' | xargs -r rm
 systemctl --user daemon-reload
 
 for i in $(seq 1 "${#CONF_NAMES[@]}"); do
@@ -101,4 +101,4 @@ for i in $(seq 1 "${#CONF_NAMES[@]}"); do
 done
 
 systemctl --user daemon-reload
-systemctl --user list-unit-files $PREFIX-*.socket --no-legend | awk '{print $1}' | xargs systemctl --user enable --now
+systemctl --user list-unit-files $PREFIX-*.socket --no-legend | awk '{print $1}' | xargs -r systemctl --user enable --now
