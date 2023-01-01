@@ -1,0 +1,104 @@
+#!/bin/bash
+
+IDLE_TIME="300s"
+PREFIX="sap"
+
+verify_cmd_exists() {
+  command -v "$@" >/dev/null 2>&1 || (echo "$@ not installed" && exit 1)
+}
+
+generate() {
+  NAME="$PREFIX-$1"
+  PROXY_PORT="$2"
+  COMMAND="$3"
+  PORT="$((PROXY_PORT + 1))"
+  gen_service "$NAME" "${COMMAND/\%PORT\%/$PORT}"
+  gen_proxy_service "$NAME" "$PORT"
+  gen_socket "$NAME" "$PROXY_PORT"
+}
+
+gen_service() {
+  NAME="$1"
+  COMMAND="$2"
+  echo \
+    "[Unit]
+Description=Tunnel for $NAME
+
+## Stop-when-idle is controlled by \`--exit-idle-time=\` in proxy.service
+#  (from \`man systemd-socket-proxyd\`)
+StopWhenUnneeded=true
+
+[Service]
+Type=simple
+## Prefixed with \`-\` not to mark service as failed on net-fails;
+#  will be restarted on-demand by socket-activation.
+ExecStart=-$COMMAND
+## Delay enough time to allow for ssh-authentication to complete
+#  so tunnel has been established before proxy process attaches to it,
+#  or else the first SYN request will be lost.
+ExecStartPost=/bin/sleep 2
+" >"$HOME/.config/systemd/user/$NAME.service"
+}
+
+gen_proxy_service() {
+  NAME="$1"
+  PORT="$2"
+  echo \
+    "[Unit]
+Description=Socket-activation proxy for $NAME
+
+## Stop also when stopped listening for socket-activation.
+BindsTo=$NAME-proxy.socket
+After=$NAME-proxy.socket
+
+## Stop also when ssh-tunnel stops/breaks
+#  (otherwise, could not restart).
+BindsTo=$NAME.service
+After=$NAME.service
+
+[Service]
+ExecStart=/lib/systemd/systemd-socket-proxyd --exit-idle-time=$IDLE_TIME 127.0.0.1:$PORT
+" >"$HOME/.config/systemd/user/$NAME-proxy.service"
+}
+
+gen_socket() {
+  NAME="$1"
+  PROXY_PORT="$2"
+  echo \
+    "#
+# https://unix.stackexchange.com/questions/383678/on-demand-ssh-socks-proxy-through-systemd-user-units-with-socket-activation-does/635178#635178
+#
+# Check status:
+# systemctl --user status $NAME-proxy.{socket,service} $NAME
+#
+[Unit]
+Description=Socket-activation for $NAME
+
+[Socket]
+ListenStream=127.0.0.1:$PROXY_PORT
+
+[Install]
+WantedBy=sockets.target
+" >"$HOME/.config/systemd/user/$NAME-proxy.socket"
+}
+
+verify_cmd_exists jq || exit 1
+verify_cmd_exists xargs || exit 1
+
+CONFIG_PATH="$HOME/.socket-activation-proxy.json"
+readarray -t CONF_NAMES < <(jq -r '.[].name' "$CONFIG_PATH")
+readarray -t CONF_PORTS < <(jq -r '.[].port' "$CONFIG_PATH")
+readarray -t CONF_COMMANDS < <(jq -r '.[].command' "$CONFIG_PATH")
+
+systemctl --user list-unit-files $PREFIX-*.socket --no-legend | awk '{print $1}' | xargs systemctl --user disable --now
+systemctl --user list-unit-files $PREFIX-*.socket --no-legend |
+  awk -v home="$HOME" '{print home "/.config/systemd/user/" $1}' | xargs rm
+systemctl --user daemon-reload
+
+for i in $(seq 1 "${#CONF_NAMES[@]}"); do
+  index=$(("$i" - 1))
+  generate "${CONF_NAMES[@]:index:1}" "${CONF_PORTS[@]:index:1}" "${CONF_COMMANDS[@]:index:1}"
+done
+
+systemctl --user daemon-reload
+systemctl --user list-unit-files $PREFIX-*.socket --no-legend | awk '{print $1}' | xargs systemctl --user enable --now
