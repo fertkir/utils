@@ -11,8 +11,9 @@ generate() {
   NAME="$PREFIX-$1"
   PROXY_PORT="$2"
   COMMAND="$3"
+  SLEEP="$4"
   PORT="$((PROXY_PORT + 1))"
-  gen_service "$NAME" "${COMMAND/\%PORT\%/$PORT}"
+  gen_service "$NAME" "${COMMAND/\%PORT\%/$PORT}" "$SLEEP"
   gen_proxy_service "$NAME" "$PORT"
   gen_socket "$NAME" "$PROXY_PORT"
 }
@@ -20,6 +21,7 @@ generate() {
 gen_service() {
   NAME="$1"
   COMMAND="$2"
+  SLEEP="$3"
   echo \
     "[Unit]
 Description=Tunnel for $NAME
@@ -36,7 +38,7 @@ ExecStart=-$COMMAND
 ## Delay enough time to allow for ssh-authentication to complete
 #  so tunnel has been established before proxy process attaches to it,
 #  or else the first SYN request will be lost.
-ExecStartPost=/bin/sleep 2
+ExecStartPost=/bin/sleep $SLEEP
 " >"$HOME/.config/systemd/user/$NAME.service"
 }
 
@@ -89,6 +91,7 @@ CONFIG_PATH="$HOME/.socket-activation-proxy.json"
 readarray -t CONF_NAMES < <(jq -r '.[].name' "$CONFIG_PATH")
 readarray -t CONF_PORTS < <(jq -r '.[].port' "$CONFIG_PATH")
 readarray -t CONF_COMMANDS < <(jq -r '.[].command' "$CONFIG_PATH")
+readarray -t CONF_SLEEPS < <(jq -r '.[].sleep' "$CONFIG_PATH" | sed --expression 's/null/1/g') # 1 sec by default
 
 systemctl --user list-unit-files $PREFIX-*.socket --no-legend | awk '{print $1}' | xargs -r systemctl --user disable --now
 systemctl --user list-unit-files $PREFIX-* --no-legend |
@@ -97,7 +100,7 @@ systemctl --user daemon-reload
 
 for i in $(seq 1 "${#CONF_NAMES[@]}"); do
   index=$(("$i" - 1))
-  generate "${CONF_NAMES[@]:index:1}" "${CONF_PORTS[@]:index:1}" "${CONF_COMMANDS[@]:index:1}"
+  generate "${CONF_NAMES[@]:index:1}" "${CONF_PORTS[@]:index:1}" "${CONF_COMMANDS[@]:index:1}" "${CONF_SLEEPS[@]:index:1}"
 done
 
 systemctl --user daemon-reload
