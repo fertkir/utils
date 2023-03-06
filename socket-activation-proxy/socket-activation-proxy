@@ -91,7 +91,7 @@ CONFIG_PATH="$HOME/.socket-activation-proxy.json"
 readarray -t CONF_NAMES < <(jq -r '.[].name' "$CONFIG_PATH")
 readarray -t CONF_PORTS < <(jq -r '.[].port' "$CONFIG_PATH")
 readarray -t CONF_COMMANDS < <(jq -r '.[].command' "$CONFIG_PATH")
-readarray -t CONF_SLEEPS < <(jq -r '.[].sleep' "$CONFIG_PATH" | sed --expression 's/null/1/g') # 1 sec by default
+readarray -t CONF_SLEEPS < <(jq -r '.[].sleep' "$CONFIG_PATH" | sed --expression 's/null/2/g') # 2 seconds by default
 
 systemctl --user list-unit-files $PREFIX-*.socket --no-legend | awk '{print $1}' | xargs -r systemctl --user disable --now
 systemctl --user list-unit-files $PREFIX-* --no-legend |
