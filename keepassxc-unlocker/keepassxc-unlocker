@@ -26,7 +26,7 @@ Description=keepassxc-unlocker start up
 
 [Service]
 ExecStart=keepassxc
-ExecStartPost=sleep 1
+ExecStartPost=sleep 2
 ExecStartPost=keepassxc-unlocker unlock
 Restart=on-failure
 
