@@ -43,10 +43,6 @@ WantedBy=graphical-session.target" >"$HOME/.config/systemd/user/keepassxc-unlock
       "[Desktop Entry]
   Type=Application
   Exec=systemctl --user start keepassxc-unlocker-startup.service
-  X-GNOME-Autostart-enabled=true
-  X-GNOME-Autostart-Delay=2
-  Hidden=false
-  NoDisplay=false
   Name=keepassxc-unlocker-startup
   Name[en_GB]=keepassxc-unlocker-startup
   Comment[en_GB]=Launch KeePassXC and unlock databases
@@ -55,9 +51,6 @@ WantedBy=graphical-session.target" >"$HOME/.config/systemd/user/keepassxc-unlock
     "[Desktop Entry]
 Type=Application
 Exec=keepassxc-unlocker watch
-X-GNOME-Autostart-enabled=true
-Hidden=false
-NoDisplay=false
 Name=keepassxc-unlocker-watch
 Name[en_GB]=keepassxc-unlocker-watch
 Comment[en_GB]=Launch keepassxc-unlocker watch
