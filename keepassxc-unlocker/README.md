@@ -15,4 +15,5 @@ keepassxc-unlocker add ~/database2.kdbx
 ```bash
 keepassxc-unlocker autostart add
 ```
-3. Log out and log in back
+3. Set up KeePassXC to automatically launch at system startup
+4. Log out and log in back

@@ -11,6 +11,9 @@ verify_cmd_exists keepassxc || exit 1
 verify_cmd_exists secret-tool || exit 1
 verify_cmd_exists dbus-send || exit 1
 verify_cmd_exists dbus-monitor || exit 1
+verify_cmd_exists pgrep || exit 1
+
+APP_NAME="keepassxc"
 
 add() {
   local keepass_db_path="$1"
@@ -18,16 +21,13 @@ add() {
 }
 
 autostart-add() {
-  # using service instead of just autostart in order to restart KeePassXC on failure
   mkdir -p "$HOME/.config/systemd/user"
   echo \
     "[Unit]
 Description=keepassxc-unlocker start up
 
 [Service]
-ExecStart=keepassxc
-ExecStartPost=sleep 2
-ExecStartPost=keepassxc-unlocker unlock
+ExecStart=keepassxc-unlocker run
 Restart=on-failure
 
 [Install]
@@ -62,6 +62,19 @@ autostart-remove() {
   rm -f "$HOME/.config/autostart/keepassxc-unlocker-watch.desktop"
   rm -f "$HOME/.config/systemd/user/keepassxc-unlocker-startup.service"
   systemctl --user daemon-reload
+}
+
+run() {
+  prev_pid=""
+  while true; do
+    current_pid=$(pgrep -x "$APP_NAME")
+    if [ -n "$current_pid" ] && [ "$current_pid" != "$prev_pid" ]; then
+      echo "$APP_NAME has started or changed its PID to $current_pid."
+      unlock
+      prev_pid=$current_pid
+    fi
+    sleep 5
+  done
 }
 
 unlock() {
@@ -118,6 +131,9 @@ autostart)
     autostart-remove
     ;;
   esac
+  ;;
+run)
+  run "${@:2}"
   ;;
 unlock)
   unlock "${@:2}"
