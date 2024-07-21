@@ -11,7 +11,7 @@ verify_cmd_exists keepassxc || exit 1
 verify_cmd_exists secret-tool || exit 1
 verify_cmd_exists dbus-send || exit 1
 verify_cmd_exists dbus-monitor || exit 1
-verify_cmd_exists pgrep || exit 1
+verify_cmd_exists pidof || exit 1
 
 APP_NAME="keepassxc"
 
@@ -34,19 +34,9 @@ Restart=on-failure
 WantedBy=graphical-session.target" >"$HOME/.config/systemd/user/keepassxc-unlocker-startup.service"
 
   systemctl --user daemon-reload
-  systemctl --user start keepassxc-unlocker-startup.service
+  systemctl --user enable --now keepassxc-unlocker-startup.service
 
   mkdir -p "$HOME/.config/autostart"
-  # will start keepassxc-unlocker-startup.service from autostart
-  # if we just enable the service instead, KeePassXC icon is distorted (probable graphical-session.target is started before screen resolution is set)
-    echo \
-      "[Desktop Entry]
-  Type=Application
-  Exec=systemctl --user start keepassxc-unlocker-startup.service
-  Name=keepassxc-unlocker-startup
-  Name[en_GB]=keepassxc-unlocker-startup
-  Comment[en_GB]=Launch KeePassXC and unlock databases
-  Comment=Launch KeePassXC and unlock databases" >"$HOME/.config/autostart/keepassxc-unlocker-startup.desktop"
   echo \
     "[Desktop Entry]
 Type=Application
@@ -58,7 +48,7 @@ Comment=Launch keepassxc-unlocker watch" >"$HOME/.config/autostart/keepassxc-unl
 }
 
 autostart-remove() {
-  rm -f "$HOME/.config/autostart/keepassxc-unlocker-startup.desktop"
+  systemctl --user disable --now keepassxc-unlocker-startup.service
   rm -f "$HOME/.config/autostart/keepassxc-unlocker-watch.desktop"
   rm -f "$HOME/.config/systemd/user/keepassxc-unlocker-startup.service"
   systemctl --user daemon-reload
@@ -67,7 +57,7 @@ autostart-remove() {
 run() {
   prev_pid=""
   while true; do
-    current_pid=$(pgrep -x "$APP_NAME")
+    current_pid=$(pidof -x "$APP_NAME")
     if [ -n "$current_pid" ] && [ "$current_pid" != "$prev_pid" ]; then
       echo "$APP_NAME has started or changed its PID to $current_pid."
       unlock
