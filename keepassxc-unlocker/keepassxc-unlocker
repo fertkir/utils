@@ -32,25 +32,27 @@ Restart=on-failure
 
 [Install]
 WantedBy=graphical-session.target" >"$HOME/.config/systemd/user/keepassxc-unlocker-startup.service"
+  echo \
+    "[Unit]
+Description=keepassxc-unlocker watch
+
+[Service]
+ExecStart=keepassxc-unlocker watch
+Restart=on-failure
+
+[Install]
+WantedBy=graphical-session.target" >"$HOME/.config/systemd/user/keepassxc-unlocker-watch.service"
 
   systemctl --user daemon-reload
   systemctl --user enable --now keepassxc-unlocker-startup.service
-
-  mkdir -p "$HOME/.config/autostart"
-  echo \
-    "[Desktop Entry]
-Type=Application
-Exec=keepassxc-unlocker watch
-Name=keepassxc-unlocker-watch
-Name[en_GB]=keepassxc-unlocker-watch
-Comment[en_GB]=Launch keepassxc-unlocker watch
-Comment=Launch keepassxc-unlocker watch" >"$HOME/.config/autostart/keepassxc-unlocker-watch.desktop"
+  systemctl --user enable --now keepassxc-unlocker-watch.service
 }
 
 autostart-remove() {
   systemctl --user disable --now keepassxc-unlocker-startup.service
-  rm -f "$HOME/.config/autostart/keepassxc-unlocker-watch.desktop"
+  systemctl --user disable --now keepassxc-unlocker-watch.service
   rm -f "$HOME/.config/systemd/user/keepassxc-unlocker-startup.service"
+  rm -f "$HOME/.config/systemd/user/keepassxc-unlocker-watch.desktop"
   systemctl --user daemon-reload
 }
 
