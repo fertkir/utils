@@ -62,8 +62,9 @@ run() {
     current_pid=$(pidof -x "$APP_NAME")
     if [ -n "$current_pid" ] && [ "$current_pid" != "$prev_pid" ]; then
       echo "$APP_NAME has started or changed its PID to $current_pid."
-      unlock
-      prev_pid=$current_pid
+      if unlock; then
+        prev_pid=$current_pid
+      fi
     fi
     sleep 5
   done
