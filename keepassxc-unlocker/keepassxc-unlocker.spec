@@ -19,7 +19,7 @@ Takes passwords from system keyring using libsecret and unlocks kdbx databases b
 %prep
 %setup -q -n utils-%{commit}
 # Copy the LICENSE file from the root of the extracted archive
-cp -p ../LICENSE .
+# cp -p ../LICENSE .
 
 %build
 # No build steps needed for this script
@@ -29,7 +29,7 @@ mkdir -p %{buildroot}%{_bindir}
 install -Dm755 keepassxc-unlocker/keepassxc-unlocker %{buildroot}%{_bindir}/keepassxc-unlocker
 
 %files
-%license LICENSE
+# %license LICENSE
 %doc keepassxc-unlocker/README.md
 %{_bindir}/keepassxc-unlocker
 
