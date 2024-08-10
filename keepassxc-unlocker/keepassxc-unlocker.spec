@@ -20,7 +20,7 @@ Takes passwords from system keyring using libsecret and unlocks kdbx databases b
 
 
 %install
-install -Dm755 ./keepassxc-unlocker/keepassxc-unlocker %{_bindir}/keepassxc-unlocker
+install -Dm755 keepassxc-unlocker %{_bindir}/keepassxc-unlocker
 
 
 %files
