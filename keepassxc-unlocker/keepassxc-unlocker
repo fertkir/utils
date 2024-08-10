@@ -7,7 +7,6 @@ verify_cmd_exists() {
   command -v "$@" >/dev/null 2>&1 || (echo "$@ not installed" && exit 1)
 }
 
-verify_cmd_exists keepassxc || exit 1
 verify_cmd_exists secret-tool || exit 1
 verify_cmd_exists dbus-send || exit 1
 verify_cmd_exists dbus-monitor || exit 1
