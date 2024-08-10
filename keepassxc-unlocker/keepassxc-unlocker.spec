@@ -15,7 +15,6 @@ Requires:       dbus-tools
 Takes passwords from system keyring using libsecret and unlocks kdbx databases by listening and sending D-Bus messages.
 
 %prep
-%setup -q
 
 %build
 
