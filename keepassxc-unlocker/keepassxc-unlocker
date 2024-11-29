@@ -75,6 +75,7 @@ unlock() {
   local current_time
   current_time=$(date +%s)
 
+  # KeePassXC segfaults if dbus-send is triggerred multiple times simultaneously
   if ((current_time - LAST_EXECUTION < THROTTLE_WINDOW)); then
     return 0 # throttle
   fi
