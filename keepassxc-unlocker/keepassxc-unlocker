@@ -13,8 +13,6 @@ verify_cmd_exists dbus-monitor || exit 1
 verify_cmd_exists pidof || exit 1
 
 APP_NAME="keepassxc"
-THROTTLE_WINDOW_SECONDS=2
-LAST_EXECUTION=0
 
 add() {
   local keepass_db_path="$1"
@@ -72,15 +70,6 @@ run() {
 }
 
 unlock() {
-  local current_time
-  current_time=$(date +%s)
-
-  # KeePassXC segfaults if dbus-send is triggerred multiple times simultaneously
-  if ((current_time - LAST_EXECUTION < THROTTLE_WINDOW)); then
-    return 0 # throttle
-  fi
-  LAST_EXECUTION=$current_time
-
   readarray -t secret_to_db_path_arr < <(secret-tool search --all service keepassxc-unlocker 2>&1 |
     awk '/^secret|^attribute.username/ {print $3}')
 
