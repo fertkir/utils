@@ -13,6 +13,7 @@ verify_cmd_exists dbus-monitor || exit 1
 verify_cmd_exists pidof || exit 1
 
 APP_NAME="keepassxc"
+SCRIPT_DIR="$(cd -- "$(dirname -- "$(readlink -f -- "$0")")" && pwd)"
 
 add() {
   local keepass_db_path="$1"
@@ -26,7 +27,7 @@ autostart-add() {
 Description=keepassxc-unlocker start up
 
 [Service]
-ExecStart=keepassxc-unlocker run
+ExecStart=$SCRIPT_DIR/keepassxc-unlocker run
 Restart=on-failure
 
 [Install]
@@ -36,7 +37,7 @@ WantedBy=graphical-session.target" >"$HOME/.config/systemd/user/keepassxc-unlock
 Description=keepassxc-unlocker watch
 
 [Service]
-ExecStart=keepassxc-unlocker watch
+ExecStart=$SCRIPT_DIR/keepassxc-unlocker watch
 Restart=on-failure
 
 [Install]
@@ -51,14 +52,14 @@ autostart-remove() {
   systemctl --user disable --now keepassxc-unlocker-startup.service
   systemctl --user disable --now keepassxc-unlocker-watch.service
   rm -f "$HOME/.config/systemd/user/keepassxc-unlocker-startup.service"
-  rm -f "$HOME/.config/systemd/user/keepassxc-unlocker-watch.desktop"
+  rm -f "$HOME/.config/systemd/user/keepassxc-unlocker-watch.service"
   systemctl --user daemon-reload
 }
 
 run() {
   prev_pid=""
   while true; do
-    current_pid=$(pidof -x "$APP_NAME")
+    current_pid=$(pgrep -xo "$APP_NAME")
     if [ -n "$current_pid" ] && [ "$current_pid" != "$prev_pid" ]; then
       echo "$APP_NAME has started or changed its PID to $current_pid."
       if unlock; then
