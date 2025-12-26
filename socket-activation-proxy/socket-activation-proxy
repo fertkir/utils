@@ -22,8 +22,8 @@ gen_service() {
   NAME="$1"
   COMMAND="$2"
   SLEEP="$3"
-  echo \
-    "[Unit]
+  cat >"$HOME/.config/systemd/user/$NAME.service" <<EOF
+[Unit]
 Description=Tunnel for $NAME
 
 ## Stop-when-idle is controlled by \`--exit-idle-time=\` in proxy.service
@@ -39,14 +39,14 @@ ExecStart=-$COMMAND
 #  so tunnel has been established before proxy process attaches to it,
 #  or else the first SYN request will be lost.
 ExecStartPost=/bin/sleep $SLEEP
-" >"$HOME/.config/systemd/user/$NAME.service"
+EOF
 }
 
 gen_proxy_service() {
   NAME="$1"
   PORT="$2"
-  echo \
-    "[Unit]
+  cat >"$HOME/.config/systemd/user/$NAME-proxy.service" <<EOF
+[Unit]
 Description=Socket-activation proxy for $NAME
 
 ## Stop also when stopped listening for socket-activation.
@@ -60,14 +60,14 @@ After=$NAME.service
 
 [Service]
 ExecStart=/lib/systemd/systemd-socket-proxyd --exit-idle-time=$IDLE_TIME 127.0.0.1:$PORT
-" >"$HOME/.config/systemd/user/$NAME-proxy.service"
+EOF
 }
 
 gen_socket() {
   NAME="$1"
   PROXY_PORT="$2"
-  echo \
-    "#
+  cat >"$HOME/.config/systemd/user/$NAME-proxy.socket" <<EOF
+#
 # https://unix.stackexchange.com/questions/383678/on-demand-ssh-socks-proxy-through-systemd-user-units-with-socket-activation-does/635178#635178
 #
 # Check status:
@@ -81,26 +81,28 @@ ListenStream=127.0.0.1:$PROXY_PORT
 
 [Install]
 WantedBy=sockets.target
-" >"$HOME/.config/systemd/user/$NAME-proxy.socket"
+EOF
 }
 
-verify_cmd_exists jq || exit 1
 verify_cmd_exists xargs || exit 1
 
-CONFIG_PATH="$HOME/.socket-activation-proxy.json"
-readarray -t CONF_NAMES < <(jq -r '.[].name' "$CONFIG_PATH")
-readarray -t CONF_PORTS < <(jq -r '.[].port' "$CONFIG_PATH")
-readarray -t CONF_COMMANDS < <(jq -r '.[].command' "$CONFIG_PATH")
-readarray -t CONF_SLEEPS < <(jq -r '.[].sleep' "$CONFIG_PATH" | sed --expression 's/null/2/g') # 2 seconds by default
-
+# Disable & remove old services
 systemctl --user list-unit-files $PREFIX-*.socket --no-legend | awk '{print $1}' | xargs -r systemctl --user disable --now
 systemctl --user list-unit-files $PREFIX-* --no-legend |
   awk -v home="$HOME" '{print home "/.config/systemd/user/" $1}' | xargs -r rm
 systemctl --user daemon-reload
 
-for i in $(seq 1 "${#CONF_NAMES[@]}"); do
-  index=$(("$i" - 1))
-  generate "${CONF_NAMES[@]:index:1}" "${CONF_PORTS[@]:index:1}" "${CONF_COMMANDS[@]:index:1}" "${CONF_SLEEPS[@]:index:1}"
+# Load configs from directory
+CONFIG_DIR="$HOME/.config/socket-activation-proxy"
+if [ ! -d "$CONFIG_DIR" ] || [ -z "$(ls "$CONFIG_DIR"/*.conf 2>/dev/null)" ]; then
+    echo "No config files found in $CONFIG_DIR"
+    exit 1
+fi
+for cfg in "$CONFIG_DIR"/*.conf; do
+    source "$cfg"
+    FILENAME=$(basename "$cfg")
+    SLEEP="${SLEEP:-2}" # Default sleep to 2 if not set
+    generate "${FILENAME%.conf}" "$PORT" "$COMMAND" "$SLEEP"
 done
 
 systemctl --user daemon-reload
